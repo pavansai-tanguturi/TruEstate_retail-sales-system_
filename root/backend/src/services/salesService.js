@@ -139,6 +139,7 @@ export const querySales = async (options) => {
 
 export const getFilterOptions = async () => {
   const [agg] = await Sale.aggregate([
+    { $unwind: { path: '$tags', preserveNullAndEmptyArrays: true } },
     {
       $group: {
         _id: null,
@@ -170,13 +171,12 @@ export const getFilterOptions = async () => {
   }
 
   const sortStrings = (arr) => arr.filter(Boolean).map(String).sort()
-  const flattenTags = (tagSets) => tagSets.flat().filter(Boolean)
 
   return {
     regions: sortStrings(agg.regions || []),
     genders: sortStrings(agg.genders || []),
     categories: sortStrings(agg.categories || []),
-    tags: sortStrings(flattenTags(agg.tags || [])),
+    tags: sortStrings(agg.tags || []),
     paymentMethods: sortStrings(agg.paymentMethods || []),
     minAge: agg.minAge ?? null,
     maxAge: agg.maxAge ?? null,

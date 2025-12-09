@@ -9,7 +9,7 @@ import SummaryCards from './components/SummaryCards.jsx'
 import { fetchFilters, fetchSales } from './services/api.js'
 import { useDebounce } from './hooks/useDebounce.js'
 
-const PAGE_SIZE = 10
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
 const emptyFilters = {
   regions: [],
   genders: [],
@@ -36,7 +36,7 @@ const initialQuery = {
   sortBy: 'date',
   sortOrder: 'desc',
   page: 1,
-  pageSize: PAGE_SIZE,
+  pageSize: 10,
 }
 
 function App() {
@@ -131,7 +131,10 @@ function App() {
       <Pagination
         page={query.page}
         totalPages={state.totalPages}
+        pageSize={query.pageSize}
+        pageSizeOptions={PAGE_SIZE_OPTIONS}
         onPageChange={(page) => updateQuery({ page })}
+        onPageSizeChange={(pageSize) => updateQuery({ pageSize, page: 1 })}
       />
     </div>
   )

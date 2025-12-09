@@ -6,7 +6,7 @@ const splitToArray = (value) => {
     .filter(Boolean)
 }
 
-export const parseListParam = (value) => splitToArray(value).map((v) => v.toLowerCase())
+export const parseListParam = (value) => splitToArray(value)
 
 export const parseNumber = (value) => {
   if (value === undefined || value === null || value === '') return null
