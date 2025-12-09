@@ -1,9 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 :root {
-  font-family: 'Helvetica Neue', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: 'Space Grotesk', 'Helvetica Neue', 'Segoe UI', system-ui, -apple-system, sans-serif;
   line-height: 1.4;
   font-weight: 400;
-  color: #1f2933;
-  background-color: #f5f7fa;
+  color: #e5e7eb;
+  background-color: #0b1224;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -16,7 +18,14 @@
 
 body {
   margin: 0;
-  background: #eef2f7;
+  background: radial-gradient(circle at 20% 20%, rgba(37, 99, 235, 0.08), transparent 35%),
+    radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.08), transparent 30%),
+    #0b1224;
+  transition: background 0.3s ease;
+}
+
+body.light {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
 }
 
 #root {
