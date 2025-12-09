@@ -32,6 +32,13 @@ const SaleSchema = new mongoose.Schema(
   { timestamps: false, versionKey: false },
 )
 
+// Compound indexes for common query patterns
 SaleSchema.index({ customerName: 'text', phoneNumber: 'text' })
+SaleSchema.index({ customerRegion: 1, date: -1 })
+SaleSchema.index({ productCategory: 1, date: -1 })
+SaleSchema.index({ paymentMethod: 1, date: -1 })
+SaleSchema.index({ gender: 1, age: 1 })
+SaleSchema.index({ tags: 1, date: -1 })
+SaleSchema.index({ date: -1, totalAmount: -1 })
 
 export const Sale = mongoose.model('Sale', SaleSchema)

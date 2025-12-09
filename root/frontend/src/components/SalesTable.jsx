@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types'
+import { memo } from 'react'
 import { formatCurrency, formatDate } from '../utils/formatters.js'
 
 const headers = [
@@ -34,11 +35,23 @@ const SalesTable = ({ rows = [], loading }) => {
         </thead>
         <tbody>
           {loading ? (
-            <tr>
-              <td colSpan={headers.length} className="loading-row">
-                Loading records...
-              </td>
-            </tr>
+            Array.from({ length: 10 }, (_, i) => (
+              <tr key={i} className="skeleton-row">
+                <td><div className="skeleton-item"></div></td>
+                <td><div className="skeleton-item"></div></td>
+                <td><div className="skeleton-item"></div></td>
+                <td><div className="skeleton-item"></div></td>
+                <td><div className="skeleton-item"></div></td>
+                <td><div className="skeleton-item"></div></td>
+                <td><div className="skeleton-item"></div></td>
+                <td><div className="skeleton-item"></div></td>
+                <td><div className="skeleton-item"></div></td>
+                <td><div className="skeleton-item"></div></td>
+                <td><div className="skeleton-item"></div></td>
+                <td><div className="skeleton-item"></div></td>
+                <td><div className="skeleton-item"></div></td>
+              </tr>
+            ))
           ) : (
             rows.map((row) => (
               <tr key={`${row.transactionId}-${row.date}`}>
@@ -69,4 +82,5 @@ SalesTable.propTypes = {
   loading: PropTypes.bool,
 }
 
-export default SalesTable
+// Memoize the component to prevent unnecessary re-renders
+export default memo(SalesTable)

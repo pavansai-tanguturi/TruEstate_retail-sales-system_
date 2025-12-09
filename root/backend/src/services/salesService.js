@@ -96,16 +96,43 @@ export const querySales = async (options) => {
   const size = Math.max(1, pageSize)
   const sort = sortMap(sortBy, sortOrder || (sortBy === 'name' ? 'asc' : 'desc'))
 
-  const buildPipeline = (pageNumber) => [
-    { $match: match },
-    { $sort: sort },
-    {
+  const buildPipeline = (pageNumber) => {
+    const pipeline = [{ $match: match }]
+    
+    // Add sort stage early for index utilization
+    pipeline.push({ $sort: sort })
+    
+    // Use $facet for parallel processing
+    pipeline.push({
       $facet: {
-        data: [{ $skip: (pageNumber - 1) * size }, { $limit: size }],
+        data: [
+          { $skip: (pageNumber - 1) * size }, 
+          { $limit: size },
+          // Project only needed fields to reduce network transfer
+          {
+            $project: {
+              transactionId: 1,
+              date: 1,
+              customerId: 1,
+              customerName: 1,
+              phoneNumber: 1,
+              gender: 1,
+              age: 1,
+              productCategory: 1,
+              quantity: 1,
+              totalAmount: 1,
+              customerRegion: 1,
+              productId: 1,
+              employeeName: 1,
+            }
+          }
+        ],
         meta: [{ $count: 'total' }],
       },
-    },
-  ]
+    })
+    
+    return pipeline
+  }
 
   const run = async (pageNumber) => {
     const [result] = await Sale.aggregate(buildPipeline(pageNumber))

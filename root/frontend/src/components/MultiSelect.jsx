@@ -1,4 +1,5 @@
 import PropTypes from 'prop-types'
+import { memo } from 'react'
 
 const MultiSelect = ({ label, options = [], selected = [], onChange, placeholder }) => {
   const toggle = (value) => {
@@ -40,4 +41,4 @@ MultiSelect.propTypes = {
   placeholder: PropTypes.string,
 }
 
-export default MultiSelect
+export default memo(MultiSelect)

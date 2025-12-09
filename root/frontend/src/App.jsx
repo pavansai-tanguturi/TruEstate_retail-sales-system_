@@ -36,13 +36,13 @@ const initialQuery = {
   sortBy: 'date',
   sortOrder: 'desc',
   page: 1,
-  pageSize: 10,
+  pageSize: 25,
 }
 
 function App() {
   const [query, setQuery] = useState(initialQuery)
   const [searchInput, setSearchInput] = useState('')
-  const debouncedSearch = useDebounce(searchInput, 350)
+  const debouncedSearch = useDebounce(searchInput, 200)
   const [filtersMeta, setFiltersMeta] = useState(emptyFilters)
 
   const [state, setState] = useState({
@@ -70,26 +70,33 @@ function App() {
   const requestPayload = useMemo(() => ({ ...query, search: debouncedSearch }), [query, debouncedSearch])
 
   useEffect(() => {
+    const abortController = new AbortController()
+    
     const run = async () => {
       setState((prev) => ({ ...prev, loading: true, error: null }))
       try {
-        const payload = await fetchSales(requestPayload)
-        setState({
-          data: payload.data,
-          total: payload.total,
-          totalPages: payload.totalPages,
-          loading: false,
-          error: null,
-        })
-        if (payload.page && payload.page !== query.page) {
-          setQuery((prev) => ({ ...prev, page: payload.page }))
+        const payload = await fetchSales(requestPayload, abortController.signal)
+        if (!abortController.signal.aborted) {
+          setState({
+            data: payload.data,
+            total: payload.total,
+            totalPages: payload.totalPages,
+            loading: false,
+            error: null,
+          })
+          if (payload.page && payload.page !== query.page) {
+            setQuery((prev) => ({ ...prev, page: payload.page }))
+          }
         }
       } catch (err) {
-        setState((prev) => ({ ...prev, loading: false, error: err.message }))
+        if (!abortController.signal.aborted) {
+          setState((prev) => ({ ...prev, loading: false, error: err.message }))
+        }
       }
     }
 
     run()
+    return () => abortController.abort()
   }, [requestPayload])
 
   const pageAmountSum = useMemo(

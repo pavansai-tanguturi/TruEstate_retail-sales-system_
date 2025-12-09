@@ -35,9 +35,9 @@ const handleResponse = async (res) => {
   return res.json()
 }
 
-export const fetchSales = async (query) => {
+export const fetchSales = async (query, signal) => {
   const qs = buildQueryString(query)
-  const res = await fetch(`${BASE_URL}/api/sales?${qs}`)
+  const res = await fetch(`${BASE_URL}/api/sales?${qs}`, { signal })
   return handleResponse(res)
 }
 
