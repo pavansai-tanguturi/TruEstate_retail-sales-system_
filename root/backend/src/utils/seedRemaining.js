@@ -11,7 +11,7 @@ dotenv.config()
 const DATA_FILE = process.env.DATA_FILE || './data/truestate_assignment_dataset.csv'
 const MONGO_URI = process.env.MONGO_URI
 const BATCH_SIZE = 250
-const SKIP_RECORDS = 380250 // Skip already imported records
+const MAX_RECORDS = 500000 // Maximum records to import
 
 const numberFields = [
   'age',
@@ -86,9 +86,8 @@ export const seedRemainingRecords = async () => {
     throw new Error(`Data file not found at ${resolvedPath}`)
   }
 
-  console.log(`🚀 Seeding remaining records`)
-  console.log(`📊 Skipping first ${SKIP_RECORDS.toLocaleString()} records (already imported)`)
-  console.log(`📝 Will import records from line ${SKIP_RECORDS + 2} onwards`)
+  console.log(`🚀 Seeding records up to ${MAX_RECORDS.toLocaleString()}`)
+  console.log(`📝 Will import records from the beginning`)
 
   const fileStream = fs.createReadStream(resolvedPath)
   const rl = readline.createInterface({
@@ -101,7 +100,6 @@ export const seedRemainingRecords = async () => {
   let totalProcessed = 0
   let batchNumber = 0
   let lineNumber = 0
-  let skipped = 0
   let isFirstLine = true
   let startTime = Date.now()
 
@@ -143,13 +141,10 @@ export const seedRemainingRecords = async () => {
       continue
     }
 
-    // Skip already imported records
-    if (lineNumber <= SKIP_RECORDS) {
-      skipped++
-      if (skipped % 50000 === 0) {
-        console.log(`⏭️  Skipped ${skipped.toLocaleString()} records...`)
-      }
-      continue
+    // Stop if we've reached the maximum
+    if (totalProcessed >= MAX_RECORDS) {
+      console.log(`🛑 Reached maximum limit of ${MAX_RECORDS.toLocaleString()} records`)
+      break
     }
 
     if (line.trim() === '') continue
