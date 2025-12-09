@@ -6,7 +6,7 @@ import { Sale } from '../models/Sale.js'
 
 dotenv.config()
 
-const DATA_FILE = process.env.DATA_FILE || './data/sample_sales.csv'
+const DATA_FILE = process.env.DATA_FILE || './data/truestate_assignment_dataset.csv'
 const MONGO_URI = process.env.MONGO_URI
 
 export const seedMongoFromCsv = async () => {

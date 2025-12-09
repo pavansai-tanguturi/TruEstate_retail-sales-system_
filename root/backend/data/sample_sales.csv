@@ -1,4 +1,0 @@
-transactionId,date,customerId,customerName,phoneNumber,gender,age,customerRegion,customerType,productId,productName,brand,productCategory,tags,quantity,pricePerUnit,discountPercentage,totalAmount,finalAmount,paymentMethod,orderStatus,deliveryType,storeId,storeLocation,salespersonId,employeeName
-TXN-1001,2023-09-26,CUST12016,Neha Yadav,+919123456789,Female,25,South,Returning,PROD0001,Denim Jacket,Acme,Clothing,"casual;fall",1,1000,10,1000,900,UPI,Delivered,Home,STORE01,Bangalore,EMP001,Harsh Agrawal
-TXN-1002,2023-09-27,CUST22021,Rahul Singh,+919876543210,Male,31,North,New,PROD0102,Running Shoes,Stride,Sports,"fitness;footwear",2,2500,5,5000,4750,Credit Card,Processing,Pickup,STORE02,Delhi,EMP014,Anjali Verma
-TXN-1003,2023-10-02,CUST33011,Aisha Khan,+911234567890,Female,29,West,Loyal,PROD0205,Smart Watch,TimeX,Electronics,"wearable;tech",1,7000,15,7000,5950,Cash,Delivered,Home,STORE03,Mumbai,EMP022,Rohan Iyer
