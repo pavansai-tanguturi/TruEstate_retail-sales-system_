@@ -93,7 +93,7 @@ function App() {
   }, [requestPayload])
 
   const pageAmountSum = useMemo(
-    () => state.data.reduce((sum, row) => sum + (Number(row.totalAmount) || 0), 0),
+    () => (state.data ? state.data.reduce((sum, row) => sum + (Number(row.totalAmount) || 0), 0) : 0),
     [state.data],
   )
 
@@ -122,7 +122,7 @@ function App() {
 
       <FilterBar filtersMeta={filtersMeta} query={query} onUpdate={updateQuery} />
 
-      <SummaryCards total={state.total} pageTotal={state.data.length} amountSum={pageAmountSum} />
+      <SummaryCards total={state.total} pageTotal={state.data ? state.data.length : 0} amountSum={pageAmountSum} />
 
       {state.error && <div className="error-banner">{state.error}</div>}
 

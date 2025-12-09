@@ -17,8 +17,8 @@ const headers = [
   'Employee name',
 ]
 
-const SalesTable = ({ rows, loading }) => {
-  if (!loading && rows.length === 0) {
+const SalesTable = ({ rows = [], loading }) => {
+  if (!loading && rows && rows.length === 0) {
     return <div className="empty-state">No results found for the chosen filters.</div>
   }
 

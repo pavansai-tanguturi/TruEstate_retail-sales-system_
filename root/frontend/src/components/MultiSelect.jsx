@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types'
 
-const MultiSelect = ({ label, options, selected, onChange, placeholder }) => {
+const MultiSelect = ({ label, options = [], selected = [], onChange, placeholder }) => {
   const toggle = (value) => {
     if (selected.includes(value)) {
       onChange(selected.filter((item) => item !== value))
@@ -13,7 +13,7 @@ const MultiSelect = ({ label, options, selected, onChange, placeholder }) => {
     <div className="filter-block">
       <div className="filter-label">{label}</div>
       <div className="pill-group">
-        {options.length === 0 ? (
+        {!options || options.length === 0 ? (
           <span className="pill pill-muted">{placeholder || 'No options'}</span>
         ) : (
           options.map((option) => (

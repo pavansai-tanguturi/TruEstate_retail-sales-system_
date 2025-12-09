@@ -1,131 +1,7 @@
-import { loadSalesData } from '../utils/dataLoader.js'
+import { Sale } from '../models/Sale.js'
 
-let salesStore = []
-let dataLoaded = false
-let filterSnapshot = {
-  regions: [],
-  genders: [],
-  categories: [],
-  tags: [],
-  paymentMethods: [],
-  minAge: null,
-  maxAge: null,
-  minDate: null,
-  maxDate: null,
-}
-
-const computeFilters = (records) => {
-  const toSet = () => new Set()
-  const regions = toSet()
-  const genders = toSet()
-  const categories = toSet()
-  const tags = toSet()
-  const paymentMethods = toSet()
-
-  let minAge = null
-  let maxAge = null
-  let minDate = null
-  let maxDate = null
-
-  records.forEach((record) => {
-    if (record.customerRegion) regions.add(record.customerRegion)
-    if (record.gender) genders.add(record.gender)
-    if (record.productCategory) categories.add(record.productCategory)
-    if (record.paymentMethod) paymentMethods.add(record.paymentMethod)
-    record.tags?.forEach((tag) => tags.add(tag))
-
-    if (record.age !== null) {
-      minAge = minAge === null ? record.age : Math.min(minAge, record.age)
-      maxAge = maxAge === null ? record.age : Math.max(maxAge, record.age)
-    }
-    if (record.dateMs) {
-      minDate = minDate === null ? record.dateMs : Math.min(minDate, record.dateMs)
-      maxDate = maxDate === null ? record.dateMs : Math.max(maxDate, record.dateMs)
-    }
-  })
-
-  filterSnapshot = {
-    regions: Array.from(regions).sort(),
-    genders: Array.from(genders).sort(),
-    categories: Array.from(categories).sort(),
-    tags: Array.from(tags).sort(),
-    paymentMethods: Array.from(paymentMethods).sort(),
-    minAge,
-    maxAge,
-    minDate,
-    maxDate,
-  }
-}
-
-export const initSalesStore = (dataFilePath) => {
-  salesStore = loadSalesData(dataFilePath)
-  computeFilters(salesStore)
-  dataLoaded = true
-  return salesStore.length
-}
-
-export const getFilterOptions = () => filterSnapshot
-
-const containsSearch = (record, searchTerm) => {
-  if (!searchTerm) return true
-  const needle = searchTerm.toLowerCase()
-  return (
-    record.customerName?.toLowerCase().includes(needle) ||
-    record.phoneNumber?.toLowerCase().includes(needle)
-  )
-}
-
-const matchesList = (value, allowed) => {
-  if (!allowed.length) return true
-  if (!value) return false
-  return allowed.includes(String(value).toLowerCase())
-}
-
-const matchesTags = (recordTags, requested) => {
-  if (!requested.length) return true
-  if (!recordTags?.length) return false
-  const lowerTags = recordTags.map((tag) => tag.toLowerCase())
-  return requested.some((tag) => lowerTags.includes(tag))
-}
-
-const matchesAge = (age, min, max) => {
-  if (min === null && max === null) return true
-  if (age === null) return false
-  if (min !== null && max !== null && min > max) return 'invalid-range'
-  if (min !== null && age < min) return false
-  if (max !== null && age > max) return false
-  return true
-}
-
-const matchesDate = (dateMs, from, to) => {
-  if (!from && !to) return true
-  if (!dateMs) return false
-  if (from && to && from > to) return 'invalid-range'
-  if (from && dateMs < from.getTime()) return false
-  if (to && dateMs > to.getTime()) return false
-  return true
-}
-
-const sortRecords = (records, sortBy, sortOrder) => {
-  const order = sortOrder === 'asc' ? 1 : -1
-  switch (sortBy) {
-    case 'quantity':
-      return records.sort((a, b) => (a.quantity - b.quantity) * order)
-    case 'name':
-      return records.sort((a, b) =>
-        a.customerName.localeCompare(b.customerName) * (sortOrder === 'desc' ? -1 : 1),
-      )
-    case 'date':
-    default:
-      return records.sort((a, b) => (a.dateMs - b.dateMs) * order)
-  }
-}
-
-export const querySales = (options) => {
-  if (!dataLoaded) {
-    throw new Error('Sales data not loaded. Call initSalesStore first.')
-  }
-
+const buildMatch = (options) => {
+  const match = {}
   const {
     searchTerm,
     regions,
@@ -137,57 +13,174 @@ export const querySales = (options) => {
     paymentMethods,
     dateFrom,
     dateTo,
+  } = options
+
+  if (searchTerm) {
+    const regex = new RegExp(searchTerm, 'i')
+    match.$or = [{ customerName: regex }, { phoneNumber: regex }]
+  }
+
+  if (regions?.length) match.customerRegion = { $in: regions }
+  if (genders?.length) match.gender = { $in: genders }
+  if (categories?.length) match.productCategory = { $in: categories }
+  if (paymentMethods?.length) match.paymentMethod = { $in: paymentMethods }
+  if (tags?.length) match.tags = { $in: tags }
+
+  if ((ageMin !== null && ageMin !== '') || (ageMax !== null && ageMax !== '')) {
+    match.age = {}
+    if (ageMin !== null && ageMin !== '') match.age.$gte = ageMin
+    if (ageMax !== null && ageMax !== '') match.age.$lte = ageMax
+  }
+
+  if (dateFrom || dateTo) {
+    match.date = {}
+    if (dateFrom) match.date.$gte = new Date(dateFrom)
+    if (dateTo) match.date.$lte = new Date(dateTo)
+  }
+
+  return match
+}
+
+const sortMap = (sortBy, sortOrder) => {
+  const order = sortOrder === 'asc' ? 1 : -1
+  switch (sortBy) {
+    case 'quantity':
+      return { quantity: order }
+    case 'name':
+      return { customerName: order }
+    case 'date':
+    default:
+      return { date: order }
+  }
+}
+
+export const querySales = async (options) => {
+  const {
+    searchTerm,
+    regions = [],
+    genders = [],
+    ageMin = null,
+    ageMax = null,
+    categories = [],
+    tags = [],
+    paymentMethods = [],
+    dateFrom,
+    dateTo,
     sortBy = 'date',
     sortOrder,
     page = 1,
     pageSize = 10,
   } = options
 
-  const invalidReasons = []
-
-  const filtered = salesStore.filter((record) => {
-    if (!containsSearch(record, searchTerm)) return false
-    if (!matchesList(record.customerRegion, regions)) return false
-    if (!matchesList(record.gender, genders)) return false
-    if (!matchesList(record.productCategory, categories)) return false
-    if (!matchesList(record.paymentMethod, paymentMethods)) return false
-
-    const ageCheck = matchesAge(record.age, ageMin, ageMax)
-    if (ageCheck === 'invalid-range') {
-      invalidReasons.push('ageRange')
-      return false
-    }
-    if (!ageCheck) return false
-
-    const dateCheck = matchesDate(record.dateMs, dateFrom, dateTo)
-    if (dateCheck === 'invalid-range') {
-      invalidReasons.push('dateRange')
-      return false
-    }
-    if (!dateCheck) return false
-
-    if (!matchesTags(record.tags, tags)) return false
-
-    return true
-  })
-
-  if (invalidReasons.length) {
-    return { invalid: true, reasons: invalidReasons }
+  if (ageMin !== null && ageMax !== null && ageMin !== '' && ageMax !== '' && ageMin > ageMax) {
+    return { invalid: true, reasons: ['ageRange'] }
+  }
+  if (dateFrom && dateTo && new Date(dateFrom) > new Date(dateTo)) {
+    return { invalid: true, reasons: ['dateRange'] }
   }
 
-  const sorted = sortRecords([...filtered], sortBy, sortOrder || (sortBy === 'name' ? 'asc' : 'desc'))
+  const match = buildMatch({
+    searchTerm,
+    regions,
+    genders,
+    ageMin,
+    ageMax,
+    categories,
+    tags,
+    paymentMethods,
+    dateFrom,
+    dateTo,
+  })
 
-  const total = sorted.length
-  const totalPages = Math.max(1, Math.ceil(total / pageSize))
-  const safePage = Math.min(Math.max(1, page), totalPages)
-  const start = (safePage - 1) * pageSize
-  const pageData = sorted.slice(start, start + pageSize)
+  const safePage = Math.max(1, page)
+  const size = Math.max(1, pageSize)
+  const sort = sortMap(sortBy, sortOrder || (sortBy === 'name' ? 'asc' : 'desc'))
+
+  const buildPipeline = (pageNumber) => [
+    { $match: match },
+    { $sort: sort },
+    {
+      $facet: {
+        data: [{ $skip: (pageNumber - 1) * size }, { $limit: size }],
+        meta: [{ $count: 'total' }],
+      },
+    },
+  ]
+
+  const run = async (pageNumber) => {
+    const [result] = await Sale.aggregate(buildPipeline(pageNumber))
+    const total = result?.meta?.[0]?.total || 0
+    const totalPages = Math.max(1, Math.ceil(total / size))
+    return { data: result?.data || [], total, totalPages }
+  }
+
+  const first = await run(safePage)
+  const normalizedPage = Math.min(safePage, first.totalPages)
+
+  if (normalizedPage !== safePage && first.total > 0) {
+    const retry = await run(normalizedPage)
+    return {
+      data: retry.data,
+      total: retry.total,
+      page: normalizedPage,
+      pageSize: size,
+      totalPages: retry.totalPages,
+    }
+  }
 
   return {
-    data: pageData,
-    total,
-    page: safePage,
-    pageSize,
-    totalPages,
+    data: first.data,
+    total: first.total,
+    page: normalizedPage,
+    pageSize: size,
+    totalPages: first.totalPages,
+  }
+}
+
+export const getFilterOptions = async () => {
+  const [agg] = await Sale.aggregate([
+    {
+      $group: {
+        _id: null,
+        regions: { $addToSet: '$customerRegion' },
+        genders: { $addToSet: '$gender' },
+        categories: { $addToSet: '$productCategory' },
+        tags: { $addToSet: '$tags' },
+        paymentMethods: { $addToSet: '$paymentMethod' },
+        minAge: { $min: '$age' },
+        maxAge: { $max: '$age' },
+        minDate: { $min: '$date' },
+        maxDate: { $max: '$date' },
+      },
+    },
+  ])
+
+  if (!agg) {
+    return {
+      regions: [],
+      genders: [],
+      categories: [],
+      tags: [],
+      paymentMethods: [],
+      minAge: null,
+      maxAge: null,
+      minDate: null,
+      maxDate: null,
+    }
+  }
+
+  const sortStrings = (arr) => arr.filter(Boolean).map(String).sort()
+  const flattenTags = (tagSets) => tagSets.flat().filter(Boolean)
+
+  return {
+    regions: sortStrings(agg.regions || []),
+    genders: sortStrings(agg.genders || []),
+    categories: sortStrings(agg.categories || []),
+    tags: sortStrings(flattenTags(agg.tags || [])),
+    paymentMethods: sortStrings(agg.paymentMethods || []),
+    minAge: agg.minAge ?? null,
+    maxAge: agg.maxAge ?? null,
+    minDate: agg.minDate ? agg.minDate.toISOString() : null,
+    maxDate: agg.maxDate ? agg.maxDate.toISOString() : null,
   }
 }
