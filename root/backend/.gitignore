@@ -94,5 +94,4 @@ build/
 *.sqlite
 *.sqlite3
 
-# CSV data files (if they contain sensitive data)
-data/*.csv
+.DS_Store
