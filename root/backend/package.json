@@ -1,6 +1,9 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "description": "Express service that loads the sales CSV once at startup and exposes a single paginated `/api/sales` endpoint with search, filtering, and sorting plus a `/health` check.",
+  "license": "ISC",
+  "author": "",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
